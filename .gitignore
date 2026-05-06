@@ -5,3 +5,4 @@ node_modules/
 uploads/
 *.log
 .env
+wholesale/wp-content/backups-dup-pro/

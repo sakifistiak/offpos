@@ -5947,3 +5947,15 @@ ERROR - 2026-05-06 17:31:05 --> 404 Page Not Found: Well-known/assetlinks.json
 ERROR - 2026-05-06 17:31:05 --> 404 Page Not Found: Well-known/assetlinks.json
 ERROR - 2026-05-06 17:31:05 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
 ERROR - 2026-05-06 17:31:05 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:42:41 --> 404 Page Not Found: Robotstxt/index
+ERROR - 2026-05-06 17:42:41 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:43:45 --> 404 Page Not Found: Wp-content/uploads
+ERROR - 2026-05-06 17:43:45 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:49:23 --> 404 Page Not Found: Robotstxt/index
+ERROR - 2026-05-06 17:49:23 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:50:12 --> 404 Page Not Found: Well-known/assetlinks.json
+ERROR - 2026-05-06 17:50:12 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:50:12 --> 404 Page Not Found: Well-known/assetlinks.json
+ERROR - 2026-05-06 17:50:12 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
+ERROR - 2026-05-06 17:52:47 --> 404 Page Not Found: Product/rectangle-white-box
+ERROR - 2026-05-06 17:52:47 --> Severity: error --> Exception: Call to undefined function base_url() /home/bdbaking/public_html/application/views/errors/html/error_404.php 8
