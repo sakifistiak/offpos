@@ -1,0 +1,25 @@
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const floatingCart = document.getElementById('fcpfw_floating_cart');
+
+        if (!floatingCart) return;
+
+        let autoCloseTimeout;
+
+        // Observe changes to visibility
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                const isVisible = window.getComputedStyle(floatingCart).display !== 'none' && floatingCart.offsetHeight > 0;
+
+                if (isVisible) {
+                    clearTimeout(autoCloseTimeout);
+                    autoCloseTimeout = setTimeout(() => {
+                        floatingCart.style.display = 'none';
+                    }, 9000);
+                }
+            });
+        });
+
+        observer.observe(floatingCart, { attributes: true });
+    });
+    

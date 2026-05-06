@@ -1,0 +1,8 @@
+bdbaking.zip
+error_log
+vendor/
+node_modules/
+uploads/
+*.log
+.env
+
