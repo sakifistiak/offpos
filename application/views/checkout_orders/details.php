@@ -480,7 +480,7 @@
                                             <div class="checkout-item-pricing">
                                                 <div class="view-mode">
                                                     <div class="qty-box"><?php echo escape_output($item->qty); ?> x <?php echo getAmtCustom($item->menu_unit_price); ?></div>
-                                                    <div><strong><?php echo getAmtCustom($item->menu_price_with_discount * $item->qty); ?></strong></div>
+                                                    <div><strong><?php echo getAmtCustom($item->menu_price_with_discount); ?></strong></div>
                                                 </div>
                                                 <div class="edit-mode flex-column align-items-end">
                                                     <div class="qty-control mb-2">
@@ -492,7 +492,7 @@
                                                         <span style="font-size:12px;">Price:</span>
                                                         <input type="number" step="any" name="items[<?php echo $index; ?>][unit_price]" value="<?php echo $item->menu_unit_price; ?>" class="editable-input item-price" style="width: 80px; text-align:right;" onchange="calculateGrandTotal()">
                                                     </div>
-                                                    <div class="text-muted" style="font-size:12px;">Total: <span class="item-total-text"><?php echo getAmtCustom($item->menu_price_with_discount * $item->qty); ?></span></div>
+                                                    <div class="text-muted" style="font-size:12px;">Total: <span class="item-total-text"><?php echo getAmtCustom($item->menu_price_with_discount); ?></span></div>
                                                     <button type="button" class="btn btn-link text-danger p-0 mt-1" style="font-size:11px;" onclick="removeItem(this)">Remove</button>
                                                 </div>
                                             </div>

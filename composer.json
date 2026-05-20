@@ -1,0 +1,21 @@
+{
+    "name": "ecare/offpos",
+    "description": "Off POS application dependencies",
+    "require": {
+        "php": ">=7.4",
+        "guzzlehttp/guzzle": "^7.0",
+        "sendinblue/api-v3-sdk": "^8.4",
+        "phpmailer/phpmailer": "^6.8",
+        "salla/zatca": "^2.0",
+        "omnipay/common": "^3.0",
+        "omnipay/paypal": "^3.0",
+        "stripe/stripe-php": "^10.0",
+        "paypal/rest-api-sdk-php": "*",
+        "php-http/guzzle7-adapter": "^1.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}
