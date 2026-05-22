@@ -249,8 +249,8 @@ class Checkout_order_model extends CI_Model {
                         $this->db->update('tbl_checkout_order_items', [
                             'qty' => $qty,
                             'menu_unit_price' => $unit_price,
-                            'menu_price_with_discount' => $unit_price,
-                            'menu_price_without_discount' => $unit_price
+                            'menu_price_with_discount' => $unit_price * $qty,
+                            'menu_price_without_discount' => $unit_price * $qty
                         ]);
                     }
                     $processed_ids[] = $item_id;
@@ -261,8 +261,8 @@ class Checkout_order_model extends CI_Model {
                         'food_menu_id' => $food_menu_id,
                         'qty' => $qty,
                         'menu_unit_price' => $unit_price,
-                        'menu_price_with_discount' => $unit_price,
-                        'menu_price_without_discount' => $unit_price,
+                        'menu_price_with_discount' => $unit_price * $qty,
+                        'menu_price_without_discount' => $unit_price * $qty,
                         'del_status' => 'Live'
                     ]);
                 }

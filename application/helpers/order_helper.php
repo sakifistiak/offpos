@@ -283,9 +283,9 @@ if (!function_exists('commit_checkout_sale')) {
                                 $details['checkout_order_id'] = $checkout_order_id;
                                 $details['food_menu_id'] = $item['id'];
                                 $details['qty'] = $qty_to_take;
-                                $details['menu_price_without_discount'] = $item['price'];
+                                $details['menu_price_without_discount'] = $item['price'] * $qty_to_take;
                                 $details['menu_unit_price'] = $item['price'];
-                                $details['menu_price_with_discount'] = $item['price'];
+                                $details['menu_price_with_discount'] = $item['price'] * $qty_to_take;
                                 $details['discount_amount'] = 0;
                                 $details['is_promo_item'] = 'No';
                                 $details['promo_parent_id'] = 0;
@@ -306,9 +306,9 @@ if (!function_exists('commit_checkout_sale')) {
                         $details['checkout_order_id'] = $checkout_order_id;
                         $details['food_menu_id'] = $item['id'];
                         $details['qty'] = $item['qty'];
-                        $details['menu_price_without_discount'] = $item['price'];
+                        $details['menu_price_without_discount'] = $item['price'] * $item['qty'];
                         $details['menu_unit_price'] = $item['price'];
-                        $details['menu_price_with_discount'] = $item['price'];
+                        $details['menu_price_with_discount'] = $item['price'] * $item['qty'];
                         $details['discount_amount'] = 0;
                         $details['is_promo_item'] = 'No';
                         $details['promo_parent_id'] = 0;

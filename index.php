@@ -1,4 +1,7 @@
 <?php
+if (isset($_SERVER['REQUEST_URI'])) {
+    $_SERVER['REQUEST_URI'] = str_replace('%20', ' ', $_SERVER['REQUEST_URI']);
+}
 /**
  * CodeIgniter
  *
