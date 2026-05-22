@@ -7,3 +7,4 @@ uploads/
 .env
 wholesale/wp-content/backups-dup-pro/
 application/logs/
+application/cache/sessions/
