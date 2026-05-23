@@ -124,6 +124,29 @@ $(function () {
         return allow_less_sale == 'No';
     }
 
+    function normalizeStockQty(stock_qty) {
+        if (stock_qty && typeof stock_qty === 'object') {
+            if (stock_qty.data !== undefined) {
+                stock_qty = stock_qty.data;
+            } else if (stock_qty.stock_quantity !== undefined) {
+                stock_qty = stock_qty.stock_quantity;
+            } else if (stock_qty.stock_qty !== undefined || stock_qty.out_qty !== undefined) {
+                stock_qty = (parseFloat(stock_qty.stock_qty) || 0) - (parseFloat(stock_qty.out_qty) || 0);
+            }
+        }
+
+        if (typeof stock_qty === 'string') {
+            stock_qty = stock_qty.replace(/,/g, '').trim();
+        }
+
+        let parsed_stock_qty = Number(stock_qty);
+        if (!Number.isFinite(parsed_stock_qty)) {
+            parsed_stock_qty = parseFloat(String(stock_qty).replace(/[^0-9.-]/g, ''));
+        }
+
+        return Number.isFinite(parsed_stock_qty) ? parsed_stock_qty : null;
+    }
+
     function setCurrentStockDisplay(stock_qty) {
         if (stock_qty === undefined || stock_qty === null || stock_qty === '') {
             $('.current_stock_t').text('N/A');
@@ -131,8 +154,15 @@ $(function () {
             return;
         }
 
-        $('.current_stock_t').text((Number(stock_qty)).toFixed(op_precision));
-        $('#current_stock_hidden').val((Number(stock_qty)).toFixed(op_precision));
+        let parsed_stock_qty = normalizeStockQty(stock_qty);
+        if (parsed_stock_qty === null) {
+            $('.current_stock_t').text('N/A');
+            $('#current_stock_hidden').val('');
+            return;
+        }
+
+        $('.current_stock_t').text(parsed_stock_qty.toFixed(op_precision));
+        $('#current_stock_hidden').val(parsed_stock_qty.toFixed(op_precision));
     }
 
     function openItemForSale(item_id, item_type, is_promo, default_qty, stock_qty) {
@@ -2380,8 +2410,6 @@ $(function () {
                         data: { item_id: item_id},
                         success: function (response) {
                             if(response.status == 'success'){
-                                $('.current_stock_t').text((Number(response.data)).toFixed(op_precision));
-                                $('#current_stock_hidden').val((Number(response.data)).toFixed(op_precision));
                                 openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
                             }else{
                                 openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
@@ -2425,8 +2453,6 @@ $(function () {
                                 return item.id == item_id;
                             });
                             if(product){
-                                $('.current_stock_t').text((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
-                                $('#current_stock_hidden').val((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
                                 openItemForSale(item_id, item_type, is_promo, default_qty, product.stock_qty - product.out_qty);
                             }else{
                                 openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
@@ -2699,7 +2725,7 @@ $(function () {
             $('.item-modal-top-header').show();
             $('.modal_qty_area').removeClass('item_modal_quantity_area_disabled');
         }else if(item_type == 'Variation_Product'){
-            $('.current_stock_t').text(Number(0).toFixed(op_precision));
+            setCurrentStockDisplay(0);
             $('.item_type_variation_heading').text('Variations');
             $('#variation_parent').text(item_id);
             modalQty = 0;
@@ -3034,8 +3060,7 @@ $(function () {
                 },
                 success: function (response) {
                     if(response.status == 'success'){
-                        $('.current_stock_t').text((Number(response.data)).toFixed(op_precision));
-                        $('#current_stock_hidden').val(Number(response.data));
+                        setCurrentStockDisplay(response.data);
                     }
                 }
             });
@@ -3060,7 +3085,7 @@ $(function () {
                     if(product){
                         $.each(product.variations, function (i, v) { 
                             if(v.vId == item_id){
-                                $('.current_stock_t').text((Number(v.stock_in) - Number(v.stock_out)).toFixed(op_precision));
+                                setCurrentStockDisplay((Number(v.stock_in) || 0) - (Number(v.stock_out) || 0));
                                 $('#item_quantity_modal_input').val(parseFloat(1));
                             }
                         });
@@ -3488,8 +3513,7 @@ $(function () {
         $('#w_s_price').text('');
         $('#s_price').text('');
         $('#modal_item_note').val('');
-        $('.current_stock_t').text(Number(0).toFixed(op_precision));
-        $('#current_stock_hidden').text(Number(0).toFixed(op_precision));
+        setCurrentStockDisplay(0);
     }
     function storageCartDataInLocal(){
         localStorage['cart_html'] = $(".order_holder").html();
@@ -3518,7 +3542,7 @@ $(function () {
                 $('#sale_unit_name_modal').text('');
                 $('#item_quantity_modal_input').val(0);
                 $('#modal_total_price').text(Number(0).toFixed(op_precision));
-                $('.current_stock_t').text(Number(current_stock_hidden).toFixed(op_precision));
+                setCurrentStockDisplay(current_stock_hidden);
             }else{
 
                 $('#item_quantity_modal_input').prop('readonly', false);
@@ -3537,7 +3561,7 @@ $(function () {
                         },
                         success: function (response) {
                             if(response.status == 'success'){
-                                $('.current_stock_t').text((Number(response.data.stock_quantity)).toFixed(op_precision));
+                                setCurrentStockDisplay(response.data);
                                 $('#item_quantity_modal_input').val(parseFloat(1));
                             }
                         }
@@ -3566,7 +3590,7 @@ $(function () {
                                     product.allexpiry.map(function(single_expiry) {
                                         for (let key_date in single_expiry) {
                                             if(singleExpiryDate == key_date){
-                                                $('.current_stock_t').text((Number(single_expiry[key_date])).toFixed(op_precision));
+                                                setCurrentStockDisplay(single_expiry[key_date]);
                                                 $('#item_quantity_modal_input').val(parseFloat(1));
                                             }
                                         }
@@ -3649,17 +3673,18 @@ $(function () {
         if(!isStockCheckEnabled()){
             fixedCurrentStock = modalQty;
         }
+        let fixedCurrentStockNumber = normalizeStockQty(fixedCurrentStock);
 
-        if(isStockCheckEnabled() && item_type == 'Medicine_Product' && (Number(fixedCurrentStock) < Number(modalQty))){
+        if(isStockCheckEnabled() && fixedCurrentStockNumber !== null && item_type == 'Medicine_Product' && (fixedCurrentStockNumber < Number(modalQty))){
             toastr['error'](('Over selling is not allowed for medicine product!'), '');
             return false;
-        }else if(isStockCheckEnabled() && allow_less_sale == 'No' && (Number(fixedCurrentStock) < Number(modalQty)) && item_type != 'Service_Product'){
+        }else if(isStockCheckEnabled() && fixedCurrentStockNumber !== null && allow_less_sale == 'No' && (fixedCurrentStockNumber < Number(modalQty)) && item_type != 'Service_Product'){
             let curr_qty = $('.current_stock_t').text();
-            $('#item_quantity_modal_input').val(Number(fixedCurrentStock));
+            $('#item_quantity_modal_input').val(fixedCurrentStockNumber);
             toastr['error'](('Over selling is not allowed!'), '');
             return false;
         }else if(isStockCheckEnabled() && item_type != 'Service_Product'){
-            $('.current_stock_t').text((Number(fixedCurrentStock)).toFixed(op_precision));
+            setCurrentStockDisplay(fixedCurrentStock);
         }
         let modal_promo_discount = $('#modal_promo_discount').text();
         if(modal_promo_discount){
@@ -3794,12 +3819,11 @@ $(function () {
                     dataType: 'json',
                     data: { item_id: item_id },
                     success: function (response) {
-                        $('.current_stock_t').text((Number(response.data)).toFixed(op_precision));
-                        $('#current_stock_hidden').val((Number(response.data)).toFixed(op_precision));
+                        setCurrentStockDisplay(response.data);
                     }
                 });
             }else{
-                $('.current_stock_t').text(Number(0).toFixed(op_precision));
+                setCurrentStockDisplay(0);
             }
         }else{
             if(item_type != 'Service_Product' && item_type != 'Combo_Product'){
@@ -3821,8 +3845,7 @@ $(function () {
                             return item.id == item_id;
                         });
                         if(product){
-                            $('.current_stock_t').text((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
-                            $('#current_stock_hidden').val((Number(product.stock_qty - product.out_qty)).toFixed(op_precision)); 
+                            setCurrentStockDisplay(product.stock_qty - product.out_qty);
                         }
                     };
                     getAllRequest.onerror = function(event) {
@@ -3930,8 +3953,7 @@ $(function () {
                                     expiryHtml += `<option ${$.trim(cartExpiryDate) == v.expiry_imei_serial ? 'selected' : ''} value="${$.trim(v.expiry_imei_serial)}">${$.trim(v.expiry_imei_serial)}</option>`;
                                 }
                                 if($.trim(cartExpiryDate) == v.expiry_imei_serial){
-                                    $('.current_stock_t').text((Number(v.stock_quantity)).toFixed(op_precision));
-                                    $('#current_stock_hidden').val((Number(v.stock_quantity)).toFixed(op_precision));
+                                    setCurrentStockDisplay(v.stock_quantity);
                                 }
                             });
                         }
@@ -3973,8 +3995,7 @@ $(function () {
                                         for (let key_date in single_expiry) {
                                             expiryHtml += `<option ${$.trim(cartExpiryDate) == key_date ? 'selected' : ''} value="${$.trim(key_date)}">${$.trim(key_date)}</option>`;
                                             if($.trim(cartExpiryDate) == key_date){
-                                                $('.current_stock_t').text((Number(single_expiry[key_date])).toFixed(op_precision));
-                                                $('#current_stock_hidden').val((Number(single_expiry[key_date])).toFixed(op_precision));
+                                                setCurrentStockDisplay(single_expiry[key_date]);
                                             }
 
                                         }
