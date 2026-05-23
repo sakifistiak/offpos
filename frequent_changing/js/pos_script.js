@@ -179,9 +179,18 @@ $(function () {
         }
     }
 
+    function getCachedCurrentStock(item_id) {
+        let item_object = findItemByItemId(item_id);
+        if (!item_object) {
+            return null;
+        }
+
+        return normalizeStockQty(item_object);
+    }
+
     function openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty) {
-        setCurrentStockDisplay('');
-        openItemForSale(item_id, item_type, is_promo, default_qty);
+        let cached_stock = getCachedCurrentStock(item_id);
+        openItemForSale(item_id, item_type, is_promo, default_qty, cached_stock === null ? '' : cached_stock);
     }
 
     function showStockBlockedMessage(item_id) {
