@@ -5,6 +5,7 @@ node_modules/
 uploads/
 *.log
 .env
+application/config/database.local.php
 wholesale/wp-content/backups-dup-pro/
 application/logs/
 application/cache/sessions/

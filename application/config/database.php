@@ -84,3 +84,8 @@ $db['default'] = array(
 'save_queries' => FALSE
 
 );
+
+$local_database_config = __DIR__ . DIRECTORY_SEPARATOR . 'database.local.php';
+if (file_exists($local_database_config)) {
+	require $local_database_config;
+}

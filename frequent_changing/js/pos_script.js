@@ -121,13 +121,23 @@ $(function () {
     let sale_price_modify = $("#sale_price_modify").val();
 
     function isStockCheckEnabled() {
-        return $('#qty_setting_check').is(':checked');
+        return allow_less_sale == 'No';
+    }
+
+    function setCurrentStockDisplay(stock_qty) {
+        if (stock_qty === undefined || stock_qty === null || stock_qty === '') {
+            $('.current_stock_t').text('N/A');
+            $('#current_stock_hidden').val('');
+            return;
+        }
+
+        $('.current_stock_t').text((Number(stock_qty)).toFixed(op_precision));
+        $('#current_stock_hidden').val((Number(stock_qty)).toFixed(op_precision));
     }
 
     function openItemForSale(item_id, item_type, is_promo, default_qty, stock_qty) {
         if (stock_qty !== undefined) {
-            $('.current_stock_t').text((Number(stock_qty)).toFixed(op_precision));
-            $('#current_stock_hidden').val((Number(stock_qty)).toFixed(op_precision));
+            setCurrentStockDisplay(stock_qty);
         }
 
         if(is_promo == 'Yes'){
@@ -2357,10 +2367,6 @@ $(function () {
                 if(item_type == 'Variation_Product'){
                     callAddToCartModal(item_id, item_type, default_qty);
                 }else{
-                    if(!isStockCheckEnabled()){
-                        openItemForSale(item_id, item_type, is_promo, default_qty, 0);
-                        return;
-                    }
                     $.ajax({
                         url: base_url + "Sale/stockCheckingForThisOutletById",
                         method: "POST",
@@ -2371,25 +2377,17 @@ $(function () {
                             if(response.status == 'success'){
                                 $('.current_stock_t').text((Number(response.data)).toFixed(op_precision));
                                 $('#current_stock_hidden').val((Number(response.data)).toFixed(op_precision));
-                                if(Number(response.data) > 0){
-                                    openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
-                                }else{
-                                    if(is_promo == 'Yes' && allow_less_sale == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else if(direct_cart == 'Yes' && item_type == 'General_Product' && allow_less_sale == 'Yes'){
-                                        generalItemdirectAddToCart(item_id, item_type, default_qty)
-                                    }else if(allow_less_sale == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else{
-                                        showStockBlockedMessage(item_id);
-                                    }
-                                }
+                                openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
                             }else{
                                 toastr['error'](("Stock checking failed! Something went wrong"), '');
                             }
                         },
                         error: function () {
-                            toastr['error'](("Stock checking failed! Something went wrong"), '');
+                            if(!isStockCheckEnabled()){
+                                openItemForSale(item_id, item_type, is_promo, default_qty);
+                            }else{
+                                toastr['error'](("Stock checking failed! Something went wrong"), '');
+                            }
                         }
                     });
                 }
@@ -2405,17 +2403,16 @@ $(function () {
                 if(item_type == 'Variation_Product'){
                     callAddToCartModal(item_id, item_type, default_qty);
                 }else{
-                    if(!isStockCheckEnabled()){
-                        openItemForSale(item_id, item_type, is_promo, default_qty, 0);
-                        return;
-                    }
-
                     // Open a connection to the IndexedDB database
                     let request = indexedDB.open('off_pos_2', 2);
 
                     request.onerror = function(event) {
                         console.log("Error opening the database:", event.target.error ? event.target.error.message : "Unknown error");
-                        toastr['error'](("Stock checking failed! Something went wrong"), '');
+                        if(!isStockCheckEnabled()){
+                            openItemForSale(item_id, item_type, is_promo, default_qty);
+                        }else{
+                            toastr['error'](("Stock checking failed! Something went wrong"), '');
+                        }
                     };
 
                     request.onsuccess = function(event) {
@@ -2433,26 +2430,18 @@ $(function () {
                             if(product){
                                 $('.current_stock_t').text((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
                                 $('#current_stock_hidden').val((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
-                                if(Number(product.stock_qty - product.out_qty) > 0){
-                                    openItemForSale(item_id, item_type, is_promo, default_qty, product.stock_qty - product.out_qty);
-                                }else{
-                                    if(is_promo == 'Yes' && allow_less_sale == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else if(direct_cart == 'Yes' && item_type == 'General_Product' && allow_less_sale == 'Yes'){
-                                        generalItemdirectAddToCart(item_id, item_type, default_qty)
-                                    }else if(allow_less_sale == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else{
-                                        showStockBlockedMessage(item_id);
-                                    }
-                                }
+                                openItemForSale(item_id, item_type, is_promo, default_qty, product.stock_qty - product.out_qty);
                             }else{
                                 toastr['error'](("Stock checking failed! Something went wrong"), '');
                             }
                         };
                         getAllRequest.onerror = function(event) {
                             console.log("Error reading data:", event.target.error.message);
-                            toastr['error'](("Stock checking failed! Something went wrong"), '');
+                            if(!isStockCheckEnabled()){
+                                openItemForSale(item_id, item_type, is_promo, default_qty);
+                            }else{
+                                toastr['error'](("Stock checking failed! Something went wrong"), '');
+                            }
                         };
                     };
                 }
@@ -3231,7 +3220,7 @@ $(function () {
         }
 
 
-        if(item_type == 'Medicine_Product' && (Number(current_stock) < Number(item_quantity_modal_input))){
+        if(isStockCheckEnabled() && item_type == 'Medicine_Product' && (Number(current_stock) < Number(item_quantity_modal_input))){
             toastr['error'](('Over selling is not allowed for medicine product!'), '');
             error = true;
             return false;
@@ -3664,15 +3653,19 @@ $(function () {
         let modalPrice = $('#modal_item_price_input_field').val();
         let modal_discount =  $('#modal_discount').val();
 
-        if(item_type == 'Medicine_Product' && (Number(fixedCurrentStock) < Number(modalQty))){
+        if(!isStockCheckEnabled()){
+            fixedCurrentStock = modalQty;
+        }
+
+        if(isStockCheckEnabled() && item_type == 'Medicine_Product' && (Number(fixedCurrentStock) < Number(modalQty))){
             toastr['error'](('Over selling is not allowed for medicine product!'), '');
             return false;
-        }else if(allow_less_sale == 'No' && (Number(fixedCurrentStock) < Number(modalQty)) && item_type != 'Service_Product'){
+        }else if(isStockCheckEnabled() && allow_less_sale == 'No' && (Number(fixedCurrentStock) < Number(modalQty)) && item_type != 'Service_Product'){
             let curr_qty = $('.current_stock_t').text();
             $('#item_quantity_modal_input').val(Number(fixedCurrentStock));
             toastr['error'](('Over selling is not allowed!'), '');
             return false;
-        }else if(item_type != 'Service_Product'){
+        }else if(isStockCheckEnabled() && item_type != 'Service_Product'){
             $('.current_stock_t').text((Number(fixedCurrentStock)).toFixed(op_precision));
         }
         let modal_promo_discount = $('#modal_promo_discount').text();
