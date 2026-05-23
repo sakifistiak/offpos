@@ -24,6 +24,29 @@
 
 class Common_model extends CI_Model {
 
+    private $has_checkout_order_tables = null;
+
+    private function checkoutPendingQtySql($item_expression, $outlet_id = '')
+    {
+        if ($this->has_checkout_order_tables === null) {
+            $this->has_checkout_order_tables = $this->db->table_exists('tbl_checkout_order_items')
+                && $this->db->table_exists('tbl_checkout_orders')
+                && $this->db->field_exists('qty', 'tbl_checkout_order_items')
+                && $this->db->field_exists('food_menu_id', 'tbl_checkout_order_items')
+                && $this->db->field_exists('checkout_order_id', 'tbl_checkout_order_items')
+                && $this->db->field_exists('del_status', 'tbl_checkout_order_items')
+                && $this->db->field_exists('id', 'tbl_checkout_orders')
+                && $this->db->field_exists('del_status', 'tbl_checkout_orders')
+                && $this->db->field_exists('order_status', 'tbl_checkout_orders');
+        }
+
+        if (!$this->has_checkout_order_tables || ($outlet_id !== '' && !$this->db->field_exists('outlet_id', 'tbl_checkout_orders'))) {
+            return "0";
+        }
+
+        $outlet_condition = $outlet_id !== '' ? " AND co.outlet_id='$outlet_id'" : "";
+        return "(SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=$item_expression $outlet_condition AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped'))";
+    }
 
     /**
      * getDataCustomName
@@ -2744,7 +2767,8 @@ class Common_model extends CI_Model {
         $where_item_parent .= " AND p_var.parent_id = '$item_id'";
         $outlet_id = $this->session->userdata('outlet_id');
         $company_id = $this->session->userdata('company_id');
-        $data = $this->db->query("SELECT 
+        $variation_checkout_pending_qty = $this->checkoutPendingQtySql('p_var.id', $outlet_id);
+        $data = $this->db->query("SELECT
                 p.id, p.name, p.code, p.type, p.expiry_date_maintain, p.alert_quantity, p.unit_type,
                 p.last_three_purchase_avg, p.last_purchase_price, p.conversion_rate, pu.unit_name as purchase_unit, su.unit_name as sale_unit,
                 (
@@ -2755,7 +2779,7 @@ class Common_model extends CI_Model {
                                 WHERE p_var.id = vst1.item_id AND vst1.type = 1 AND vst1.outlet_id = '$outlet_id'), 0), '|',
                         COALESCE((SELECT IFNULL(SUM(vst2.stock_quantity), 0) FROM tbl_stock_detail vst2 WHERE p_var.id = vst2.item_id AND vst2.type = 2 AND vst2.outlet_id = '$outlet_id'), 0)
                         +
-                        COALESCE((SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p_var.id AND co.outlet_id='$outlet_id' AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped')), 0)
+                        COALESCE($variation_checkout_pending_qty, 0)
                     ) SEPARATOR '||')
                     FROM tbl_items p_var
                     WHERE p_var.parent_id = p.id AND p_var.type = '0' AND p_var.del_status = 'Live' $where_item_parent
@@ -2782,7 +2806,8 @@ class Common_model extends CI_Model {
         }
         $outlet_id = $this->session->userdata('outlet_id');
         $company_id = $this->session->userdata('company_id');
-        $data = $this->db->query("SELECT 
+        $checkout_pending_qty = $this->checkoutPendingQtySql('p.id', $outlet_id);
+        $data = $this->db->query("SELECT
             p.id, p.name, p.code, p.type, p.expiry_date_maintain, p.alert_quantity, p.unit_type,
             p.last_three_purchase_avg, p.last_purchase_price, p.conversion_rate, 
             c.name as category_name, pu.unit_name as purchase_unit, su.unit_name as sale_unit,
@@ -2794,7 +2819,7 @@ class Common_model extends CI_Model {
             (
                 (SELECT IFNULL(SUM(st4.stock_quantity), 0) FROM tbl_stock_detail st4 WHERE p.id = st4.item_id AND st4.type = 2 AND st4.outlet_id = '$outlet_id')
                 +
-                (SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p.id AND co.outlet_id='$outlet_id' AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped'))
+                $checkout_pending_qty
             ) as out_qty,
             (
                 SELECT GROUP_CONCAT(c.stockq SEPARATOR '||') FROM (
@@ -2982,6 +3007,7 @@ class Common_model extends CI_Model {
      */
     public function stockCheckingForThisOutletById($item_id){
         $outlet_id = $this->session->userdata('outlet_id');
+        $checkout_pending_qty = $this->checkoutPendingQtySql('p.id', $outlet_id);
         $result = $this->db->query("SELECT p.name as item_name,
         (SELECT GROUP_CONCAT(st.expiry_imei_serial SEPARATOR '||') as dd
         FROM tbl_stock_detail st
@@ -2992,7 +3018,7 @@ class Common_model extends CI_Model {
         (SELECT IFNULL(SUM(st3.stock_quantity),0) FROM tbl_stock_detail st3
         WHERE p.id=st3.item_id   AND st3.type=1 AND st3.outlet_id='$outlet_id') as stock_qty,
         (SELECT IFNULL(SUM(st4.stock_quantity),0) FROM tbl_stock_detail st4
-        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + (SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p.id AND co.outlet_id='$outlet_id' AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped')) as out_qty
+        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + $checkout_pending_qty as out_qty
         FROM tbl_items p WHERE p.id='$item_id' AND p.del_status='Live'")->row();
 
         if($result){
@@ -3010,6 +3036,7 @@ class Common_model extends CI_Model {
      */
     public function getIMEINumber($item_id){
         $outlet_id = $this->session->userdata('outlet_id');
+        $checkout_pending_qty = $this->checkoutPendingQtySql('p.id', $outlet_id);
         $result = $this->db->query("SELECT p.name as item_name, p.code as item_code, p.type as item_type,
         (SELECT GROUP_CONCAT(st.expiry_imei_serial SEPARATOR '||') as dd
         FROM tbl_stock_detail st
@@ -3020,7 +3047,7 @@ class Common_model extends CI_Model {
         (SELECT IFNULL(SUM(st3.stock_quantity),0) FROM tbl_stock_detail st3
         WHERE p.id=st3.item_id   AND st3.type=1 AND st3.outlet_id='$outlet_id') as stock_qty,
         (SELECT IFNULL(SUM(st4.stock_quantity),0) FROM tbl_stock_detail st4
-        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + (SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p.id AND co.outlet_id='$outlet_id' AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped')) as out_qty
+        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + $checkout_pending_qty as out_qty
         FROM tbl_items p WHERE p.id='$item_id' AND p.del_status='Live'")->row();
         if($result){
             return $result;
@@ -3038,6 +3065,7 @@ class Common_model extends CI_Model {
      * @return object
      */
     public function getIMEISerialByOutlet($item_id, $outlet_id){
+        $checkout_pending_qty = $this->checkoutPendingQtySql('p.id', $outlet_id);
         $result = $this->db->query("SELECT p.name as item_name, p.code as item_code, p.type as item_type,
         (SELECT GROUP_CONCAT(st.expiry_imei_serial SEPARATOR '||') as dd
         FROM tbl_stock_detail st
@@ -3048,7 +3076,7 @@ class Common_model extends CI_Model {
         (SELECT IFNULL(SUM(st3.stock_quantity),0) FROM tbl_stock_detail st3
         WHERE p.id=st3.item_id   AND st3.type=1 AND st3.outlet_id='$outlet_id') as stock_qty,
         (SELECT IFNULL(SUM(st4.stock_quantity),0) FROM tbl_stock_detail st4
-        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + (SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p.id AND co.outlet_id='$outlet_id' AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped')) as out_qty
+        WHERE p.id=st4.item_id AND st4.type=2 AND st4.outlet_id='$outlet_id') + $checkout_pending_qty as out_qty
         FROM tbl_items p WHERE p.id='$item_id' AND p.del_status='Live'")->row();
         if($result){
             return $result;
@@ -3064,6 +3092,7 @@ class Common_model extends CI_Model {
      * @return object
      */
     public function checkingExisOrNotIMEISerial($item_id){
+        $checkout_pending_qty = $this->checkoutPendingQtySql('p.id');
         $result = $this->db->query("SELECT p.name as item_name, p.code as item_code, p.type as item_type,
         (SELECT GROUP_CONCAT(st.expiry_imei_serial SEPARATOR '||') as dd
         FROM tbl_stock_detail st
@@ -3074,7 +3103,7 @@ class Common_model extends CI_Model {
         (SELECT IFNULL(SUM(st3.stock_quantity),0) FROM tbl_stock_detail st3
         WHERE p.id=st3.item_id   AND st3.type=1) as stock_qty,
         (SELECT IFNULL(SUM(st4.stock_quantity),0) FROM tbl_stock_detail st4
-        WHERE p.id=st4.item_id AND st4.type=2) + (SELECT IFNULL(SUM(coi.qty), 0) FROM tbl_checkout_order_items coi JOIN tbl_checkout_orders co ON co.id = coi.checkout_order_id WHERE coi.food_menu_id=p.id AND coi.del_status='Live' AND co.del_status='Live' AND co.order_status IN ('Pending', 'Processing', 'Confirmed', 'Shipped')) as out_qty
+        WHERE p.id=st4.item_id AND st4.type=2) + $checkout_pending_qty as out_qty
         FROM tbl_items p WHERE p.id='$item_id' AND p.del_status='Live'")->row();
         if($result){
             return $result;
