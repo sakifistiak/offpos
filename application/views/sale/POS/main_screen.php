@@ -3669,7 +3669,7 @@ $company_short_name =  $getCompanyInfo->short_name;
     <!-- Plugin Js End -->
     <!-- Custom JS Start -->
     <script src="<?php echo base_url(); ?>frequent_changing/js/stripe.js"></script>
-    <script src="<?php echo base_url(); ?>frequent_changing/js/pos_script.js"></script>
+    <script src="<?php echo base_url(); ?>frequent_changing/js/pos_script.js?var=1.7"></script>
     <script src="<?php echo base_url(); ?>frequent_changing/js/register_details.js"></script>
     <!-- Custom JS End -->
 

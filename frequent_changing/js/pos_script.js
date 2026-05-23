@@ -195,7 +195,8 @@ $(function () {
 
 
     // #################### Index DB Store Start ####################
-    let is_offline_system;
+    let is_offline_system = '1';
+    $('#is_offline_system').val('1');
     function checkInternetConnection(){
         $.ajax({
             url: base_url+'internet-check',  
@@ -263,6 +264,7 @@ $(function () {
     setInterval(function () {
         checkInternetConnection();
     }, 3000);
+    checkInternetConnection();
     // #################### Index DB Store End ####################
 
 
