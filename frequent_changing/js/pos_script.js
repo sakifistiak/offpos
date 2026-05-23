@@ -775,7 +775,8 @@ $(function () {
                     type: "POST",
                     url: base_url+"Sale/stockCheckingForThisOutletById",
                     data: {
-                        item_id: item.item_id
+                        item_id: item.item_id,
+                        csrf_offpos: csrf_value_
                     },
                     dataType: "json",
                     success: function (response) {
@@ -2421,7 +2422,10 @@ $(function () {
                         method: "POST",
                         dataType: 'json',
                         async: false,
-                        data: { item_id: item_id},
+                        data: {
+                            item_id: item_id,
+                            csrf_offpos: csrf_value_
+                        },
                         success: function (response) {
                             if(response.status == 'success'){
                                 openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
@@ -3071,6 +3075,7 @@ $(function () {
                 async: false,
                 data: {
                     item_id: item_id,
+                    csrf_offpos: csrf_value_
                 },
                 success: function (response) {
                     if(response.status == 'success'){
@@ -3831,7 +3836,10 @@ $(function () {
                     method: "POST",
                     async: false,
                     dataType: 'json',
-                    data: { item_id: item_id },
+                    data: {
+                        item_id: item_id,
+                        csrf_offpos: csrf_value_
+                    },
                     success: function (response) {
                         setCurrentStockDisplay(response.data);
                     }
@@ -4689,7 +4697,10 @@ $(function () {
                         method: "POST",
                         async: false,
                         dataType: 'json',
-                        data: { item_id: item_id },
+                        data: {
+                            item_id: item_id,
+                            csrf_offpos: csrf_value_
+                        },
                         success: function (response) {
                             if(response.status == 'success'){
                                 let return_stock = parseFloat(response.data);
