@@ -120,6 +120,32 @@ $(function () {
     let invoice_configuration = $("#invoice_configuration").val();
     let sale_price_modify = $("#sale_price_modify").val();
 
+    function isStockCheckEnabled() {
+        return $('#qty_setting_check').is(':checked');
+    }
+
+    function openItemForSale(item_id, item_type, is_promo, default_qty, stock_qty) {
+        if (stock_qty !== undefined) {
+            $('.current_stock_t').text((Number(stock_qty)).toFixed(op_precision));
+            $('#current_stock_hidden').val((Number(stock_qty)).toFixed(op_precision));
+        }
+
+        if(is_promo == 'Yes'){
+            callAddToCartModal(item_id, item_type, default_qty);
+        }else if(direct_cart == 'Yes' && item_type == 'General_Product'){
+            generalItemdirectAddToCart(item_id, item_type, default_qty);
+        }else{
+            callAddToCartModal(item_id, item_type, default_qty);
+        }
+    }
+
+    function showStockBlockedMessage(item_id) {
+        toastr['error'](("Over selling is not allowed!"), '');
+        if($(`#item_${item_id}`).hasClass('active_gm_temp')){
+            $(`#item_${item_id}`).removeClass('active_gm_temp');
+        }
+    }
+
 
     // #################### Helper Function Start ####################
     // window.addEventListener("beforeunload", function (event) {
@@ -2331,6 +2357,10 @@ $(function () {
                 if(item_type == 'Variation_Product'){
                     callAddToCartModal(item_id, item_type, default_qty);
                 }else{
+                    if(!isStockCheckEnabled()){
+                        openItemForSale(item_id, item_type, is_promo, default_qty, 0);
+                        return;
+                    }
                     $.ajax({
                         url: base_url + "Sale/stockCheckingForThisOutletById",
                         method: "POST",
@@ -2341,14 +2371,8 @@ $(function () {
                             if(response.status == 'success'){
                                 $('.current_stock_t').text((Number(response.data)).toFixed(op_precision));
                                 $('#current_stock_hidden').val((Number(response.data)).toFixed(op_precision));
-                                if(Number(response.data) > 0){ 
-                                    if(is_promo == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else if(direct_cart == 'Yes' && item_type == 'General_Product'){
-                                        generalItemdirectAddToCart(item_id, item_type, default_qty)
-                                    }else{
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }
+                                if(Number(response.data) > 0){
+                                    openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
                                 }else{
                                     if(is_promo == 'Yes' && allow_less_sale == 'Yes'){
                                         callAddToCartModal(item_id, item_type, default_qty);
@@ -2357,13 +2381,15 @@ $(function () {
                                     }else if(allow_less_sale == 'Yes'){
                                         callAddToCartModal(item_id, item_type, default_qty);
                                     }else{
-                                        toastr['error'](("Over selling is not allowed!"), '');
-                                        if($(`#item_${item_id}`).hasClass('active_gm_temp')){
-                                            $(`#item_${item_id}`).removeClass('active_gm_temp');
-                                        }
+                                        showStockBlockedMessage(item_id);
                                     }
                                 }
+                            }else{
+                                toastr['error'](("Stock checking failed! Something went wrong"), '');
                             }
+                        },
+                        error: function () {
+                            toastr['error'](("Stock checking failed! Something went wrong"), '');
                         }
                     });
                 }
@@ -2379,12 +2405,17 @@ $(function () {
                 if(item_type == 'Variation_Product'){
                     callAddToCartModal(item_id, item_type, default_qty);
                 }else{
+                    if(!isStockCheckEnabled()){
+                        openItemForSale(item_id, item_type, is_promo, default_qty, 0);
+                        return;
+                    }
 
                     // Open a connection to the IndexedDB database
                     let request = indexedDB.open('off_pos_2', 2);
 
                     request.onerror = function(event) {
                         console.log("Error opening the database:", event.target.error ? event.target.error.message : "Unknown error");
+                        toastr['error'](("Stock checking failed! Something went wrong"), '');
                     };
 
                     request.onsuccess = function(event) {
@@ -2402,14 +2433,8 @@ $(function () {
                             if(product){
                                 $('.current_stock_t').text((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
                                 $('#current_stock_hidden').val((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
-                                if(Number(product.stock_qty - product.out_qty) > 0){ 
-                                    if(is_promo == 'Yes'){
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }else if(direct_cart == 'Yes' && item_type == 'General_Product'){
-                                        generalItemdirectAddToCart(item_id, item_type, default_qty)
-                                    }else{
-                                        callAddToCartModal(item_id, item_type, default_qty);
-                                    }
+                                if(Number(product.stock_qty - product.out_qty) > 0){
+                                    openItemForSale(item_id, item_type, is_promo, default_qty, product.stock_qty - product.out_qty);
                                 }else{
                                     if(is_promo == 'Yes' && allow_less_sale == 'Yes'){
                                         callAddToCartModal(item_id, item_type, default_qty);
@@ -2418,13 +2443,16 @@ $(function () {
                                     }else if(allow_less_sale == 'Yes'){
                                         callAddToCartModal(item_id, item_type, default_qty);
                                     }else{
-                                        toastr['error'](("Over selling is not allowed!"), '');
+                                        showStockBlockedMessage(item_id);
                                     }
-                                }  
+                                }
+                            }else{
+                                toastr['error'](("Stock checking failed! Something went wrong"), '');
                             }
                         };
                         getAllRequest.onerror = function(event) {
                             console.log("Error reading data:", event.target.error.message);
+                            toastr['error'](("Stock checking failed! Something went wrong"), '');
                         };
                     };
                 }
