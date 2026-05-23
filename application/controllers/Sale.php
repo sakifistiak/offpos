@@ -259,8 +259,8 @@ class Sale extends Cl_Controller {
                     'promo_description' => $string_text,
                     'promo_item_id' => $get_food_menu_id,
                     'parent_id' => $single_menus->parent_id,
-                    'stock_qty' => $single_menus->stock_qty,
-                    'out_qty' => $single_menus->out_qty,
+                    'stock_qty' => $single_menus->stock_qty ?? null,
+                    'out_qty' => $single_menus->out_qty ?? null,
                     'rack_name' => $single_menus->rack_name
                 );
                 array_push($itemArr, $data);

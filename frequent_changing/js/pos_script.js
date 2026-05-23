@@ -131,7 +131,12 @@ $(function () {
             } else if (stock_qty.stock_quantity !== undefined) {
                 stock_qty = stock_qty.stock_quantity;
             } else if (stock_qty.stock_qty !== undefined || stock_qty.out_qty !== undefined) {
-                stock_qty = (parseFloat(stock_qty.stock_qty) || 0) - (parseFloat(stock_qty.out_qty) || 0);
+                let stock_in = parseFloat(stock_qty.stock_qty);
+                let stock_out = parseFloat(stock_qty.out_qty);
+                if (!Number.isFinite(stock_in) && !Number.isFinite(stock_out)) {
+                    return null;
+                }
+                stock_qty = (Number.isFinite(stock_in) ? stock_in : 0) - (Number.isFinite(stock_out) ? stock_out : 0);
             }
         }
 
