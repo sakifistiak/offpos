@@ -248,15 +248,18 @@ class Stock_model extends CI_Model {
             $where .= " AND i.code = '$item_code'";
         }
 
-        $query = "SELECT 
-                i.id, i.code, i.name as item_name, i.type, i.expiry_date_maintain, i.conversion_rate, i.generic_name, 
-                i.brand_id, i.sale_price, i.whole_sale_price, i.purchase_price, i.last_purchase_price, i.tax_information, i.photo, 
+        $outlet_id = $this->session->userdata('outlet_id');
+        $query = "SELECT
+                i.id, i.code, i.name as item_name, i.type, i.expiry_date_maintain, i.conversion_rate, i.generic_name,
+                i.brand_id, i.sale_price, i.whole_sale_price, i.purchase_price, i.last_purchase_price, i.tax_information, i.photo,
                 i.warranty, i.guarantee, i.description, i.category_id, i.parent_id, i.supplier_id,
-                b.name as brand_name, sup.name as supplier_name, 
-                pu.unit_name as purchase_unit_name, su.unit_name as sale_unit_name, 
-                ic.name as category_name, r.name as rack_name
-            FROM 
-                tbl_items i 
+                b.name as brand_name, sup.name as supplier_name,
+                pu.unit_name as purchase_unit_name, su.unit_name as sale_unit_name,
+                ic.name as category_name, r.name as rack_name,
+                (SELECT IFNULL(SUM(st3.stock_quantity), 0) FROM tbl_stock_detail st3 WHERE i.id = st3.item_id AND st3.type = 1 AND st3.outlet_id = '$outlet_id') as stock_qty,
+                (SELECT IFNULL(SUM(st4.stock_quantity), 0) FROM tbl_stock_detail st4 WHERE i.id = st4.item_id AND st4.type = 2 AND st4.outlet_id = '$outlet_id') as out_qty
+            FROM
+                tbl_items i
             LEFT JOIN
                 tbl_brands b ON i.brand_id = b.id
             LEFT JOIN
