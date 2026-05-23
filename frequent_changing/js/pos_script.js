@@ -149,6 +149,11 @@ $(function () {
         }
     }
 
+    function openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty) {
+        setCurrentStockDisplay('');
+        openItemForSale(item_id, item_type, is_promo, default_qty);
+    }
+
     function showStockBlockedMessage(item_id) {
         toastr['error'](("Over selling is not allowed!"), '');
         if($(`#item_${item_id}`).hasClass('active_gm_temp')){
@@ -2379,15 +2384,11 @@ $(function () {
                                 $('#current_stock_hidden').val((Number(response.data)).toFixed(op_precision));
                                 openItemForSale(item_id, item_type, is_promo, default_qty, response.data);
                             }else{
-                                toastr['error'](("Stock checking failed! Something went wrong"), '');
+                                openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
                             }
                         },
                         error: function () {
-                            if(!isStockCheckEnabled()){
-                                openItemForSale(item_id, item_type, is_promo, default_qty);
-                            }else{
-                                toastr['error'](("Stock checking failed! Something went wrong"), '');
-                            }
+                            openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
                         }
                     });
                 }
@@ -2408,11 +2409,7 @@ $(function () {
 
                     request.onerror = function(event) {
                         console.log("Error opening the database:", event.target.error ? event.target.error.message : "Unknown error");
-                        if(!isStockCheckEnabled()){
-                            openItemForSale(item_id, item_type, is_promo, default_qty);
-                        }else{
-                            toastr['error'](("Stock checking failed! Something went wrong"), '');
-                        }
+                        openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
                     };
 
                     request.onsuccess = function(event) {
@@ -2432,16 +2429,12 @@ $(function () {
                                 $('#current_stock_hidden').val((Number(product.stock_qty - product.out_qty)).toFixed(op_precision));
                                 openItemForSale(item_id, item_type, is_promo, default_qty, product.stock_qty - product.out_qty);
                             }else{
-                                toastr['error'](("Stock checking failed! Something went wrong"), '');
+                                openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
                             }
                         };
                         getAllRequest.onerror = function(event) {
                             console.log("Error reading data:", event.target.error.message);
-                            if(!isStockCheckEnabled()){
-                                openItemForSale(item_id, item_type, is_promo, default_qty);
-                            }else{
-                                toastr['error'](("Stock checking failed! Something went wrong"), '');
-                            }
+                            openItemForSaleWithUnknownStock(item_id, item_type, is_promo, default_qty);
                         };
                     };
                 }
@@ -4670,10 +4663,11 @@ $(function () {
                                     toastr['error'](("Stock Not available!"), '');
                                 }
                             }else{
-                                stock_checker = false;
-                                toastr['error'](("Stock checking failed! Something went wrong"), '');
+                                stock_checker = true;
                             }
-                            
+                        },
+                        error: function () {
+                            stock_checker = true;
                         }
                     });
                 }
